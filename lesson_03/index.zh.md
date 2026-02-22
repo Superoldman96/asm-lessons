@@ -49,7 +49,7 @@ x86 汇编的一大挑战在于找到适合需求的指令。有时候指令可�
 
 **指针偏移技巧（Pointer offset trickery）**
 
-让我们回到第一课中的原始函数，但在 C 函数中添加一个宽度参数。
+让我们回到第一课中的原始函数，但在 C 函数中添加一个 width 参数。
 
 我们使用 ptrdiff_t 而不是 int 作为 width 变量，以确保 64 位参数的高 32 位为零。如果直接在函数签名中传递 int 类型的 width，然后将其作为四字用于指针算术（即使用 `widthq`），寄存器的高 32 位可能包含任意值。虽然可以用 `movsxd` 进行符号扩展来解决（也可参见 x86inc.asm 中的宏 `movsxdifnidn`），但使用 ptrdiff_t 是更简单的做法。
 
@@ -76,7 +76,7 @@ cglobal add_values, 3, 3, 2, src, src2, width
     RET
 ```
 
-让我们一步步来，因为这可能很令人困惑：
+让我们逐步分析：
 
 ```assembly
    add srcq, widthq
@@ -125,7 +125,7 @@ SECTION_RODATA 64
 | PUNPCKLBW xmm1, xmm2/m128 |
 | :---- |
 
-这意味着它的源（右侧）可以是一个 xmm 寄存器或一个内存地址（m128 意味着具有标准 [base + scale*index + disp] 语法的内存地址），目标是一个 xmm 寄存器。
+这意味着它的源操作数（右侧）可以是一个 xmm 寄存器或内存地址（m128 表示具有标准 [base + scale*index + disp] 语法的内存地址），目标操作数是一个 xmm 寄存器。
 
 上面的 officedaytime.com 网站有一个很好的图表展示了发生了什么：
 
@@ -139,7 +139,7 @@ SECTION_RODATA 64
 pxor      m2, m2 ; 将 m2 清零
 
 movu      m0, [srcq]
-movu      m1, m0 ; 在 m1 中制作 m0 的副本
+movu      m1, m0 ; 将 m0 复制到 m1
 punpcklbw m0, m2
 punpckhbw m1, m2
 ```
@@ -156,7 +156,7 @@ punpckhbw m1, m2
 pxor      m2, m2 ; 将 m2 清零
 
 movu      m0, [srcq]
-movu      m1, m0 ; 在 m1 中制作 m0 的副本
+movu      m1, m0 ; 将 m0 复制到 m1
 
 pcmpgtb   m2, m0
 punpcklbw m0, m2
@@ -169,7 +169,7 @@ punpckhbw m1, m2
 
 packuswb（pack unsigned word to byte，即打包无符号字到字节）和 packsswb 可以将字转换为字节。它们将两个包含字的 SIMD 寄存器合并为一个包含字节的 SIMD 寄存器。注意，如果值超出字节范围，会被饱和（saturated，即截断到最大值）。
 
-**洗牌 (Shuffles)**
+**洗牌（Shuffles）**
 
 洗牌（Shuffles），也称为排列（permutes），可以说是视频处理中最重要的指令。SSSE3 中的 pshufb（packed shuffle bytes，即打包洗牌字节）是其中最重要的变体。
 
